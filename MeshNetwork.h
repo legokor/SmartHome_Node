@@ -12,6 +12,8 @@ class MeshNetwork{
         int numberOfPossibleParent;
         bool checkPrefix(const char *text, const char *prefix);
         const char * generatePassword(const char * bssid);
+        String generateSoftAPName();
+        IPAddress generateSoftAPIP();
         int selectSignal(int * signals);
 
       public:

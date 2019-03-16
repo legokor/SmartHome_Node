@@ -10,6 +10,21 @@ const char * MeshNetwork::generatePassword(const char * bssid){
   return bssid;
 }
 
+String MeshNetwork::generateSoftAPName(){
+    int parentID = this->parentName.substring(strlen(config::AP_PREFIX)).toInt();
+    return config::AP_PREFIX+String((parentID+1));
+}
+
+IPAddress MeshNetwork::generateSoftAPIP()
+{
+    IPAddress parentIP(WiFi.gatewayIP());
+    return IPAddress(
+        parentIP[0],
+        parentIP[1],
+        parentIP[2] + 1,
+        1);
+}
+
 bool MeshNetwork::checkPrefix(const char *text, const char *prefix)
 {
     return 0 == strncmp(text,prefix,strlen(prefix));
@@ -69,7 +84,18 @@ bool MeshNetwork::connectParent(){
 }
 
 bool MeshNetwork::createAP(){
+    // IPAddress localIP = this->generateSoftAPIP();
+    // IPAddress gateway = WiFi.localIP();
+    IPAddress localIP = WiFi.localIP();
+    IPAddress gateway = WiFi.gatewayIP();
+    IPAddress subnet(255, 255, 255, 0);
 
+    WiFi.softAPConfig(localIP, gateway, subnet);
+
+    return WiFi.softAP(
+        this->generateSoftAPName(), 
+        this->generatePassword(WiFi.softAPmacAddress().c_str())
+    );
 }
 
 bool MeshNetwork::init(){
@@ -82,8 +108,24 @@ bool MeshNetwork::init(){
         Serial.print("Can't connect to parents");
         return false;
     }
- 
-    digitalWrite(board::STATUS_LED, HIGH);
+    if (!this->createAP())
+    {
+        Serial.print("Can't create to AP");
+        return false;
+    }
+
+    Serial.print("Parent address: ");
+    Serial.println(WiFi.gatewayIP());
+
     Serial.print("Connected, IP address: ");
     Serial.println(WiFi.localIP());
+
+  
+
+    Serial.print("Soft-AP IP address = ");
+    Serial.println(WiFi.softAPIP());
+    Serial.print("Password: ");
+    Serial.println(this->generatePassword(WiFi.softAPmacAddress().c_str()));
+
+    digitalWrite(board::STATUS_LED, HIGH);
 }
