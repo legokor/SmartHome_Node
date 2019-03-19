@@ -84,14 +84,13 @@ bool MeshNetwork::connectParent(){
 }
 
 bool MeshNetwork::createAP(){
-    // IPAddress localIP = this->generateSoftAPIP();
+    IPAddress localIP = this->generateSoftAPIP();
     // IPAddress gateway = WiFi.localIP();
-    IPAddress localIP = WiFi.localIP();
-    IPAddress gateway = WiFi.gatewayIP();
     IPAddress subnet(255, 255, 255, 0);
 
-    WiFi.softAPConfig(localIP, gateway, subnet);
-
+    WiFi.softAPConfig(localIP, localIP, subnet);
+    // Serial.println(wifi_set_broadcast_if(3));
+    
     return WiFi.softAP(
         this->generateSoftAPName(), 
         this->generatePassword(WiFi.softAPmacAddress().c_str())
@@ -128,4 +127,6 @@ bool MeshNetwork::init(){
     Serial.println(this->generatePassword(WiFi.softAPmacAddress().c_str()));
 
     digitalWrite(board::STATUS_LED, HIGH);
+
+    // Serial.println(wifi_get_broadcast_if());
 }
