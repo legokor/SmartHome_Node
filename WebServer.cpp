@@ -1,10 +1,13 @@
 #include "WebServer.h"
 #include "config.h"
+#include <WiFiUdp.h>
+#include "MessageParser.h"
+
+#define LOCAL_UDP_PORT 1360
 
 void getSoftAPClients()
 {
-    HTTPClient server;
-    struct station_info *station = wifi_softap_get_station_info();
+    /*struct station_info *station = wifi_softap_get_station_info();
     while (station)
     {
         Serial.print("BSSID: ");
@@ -18,71 +21,50 @@ void getSoftAPClients()
         Serial.print("IP: ");
         String clientIP = IPAddress(&station->ip).toString();
         Serial.println(clientIP);
-        
-        // server.begin("http://" + clientIP+":80");
-        // server.begin("http://192.168.43.1:12345");
-        WiFiClient wifiClient;
-        wifiClient.connect(IPAddress(192,168,44,100),80);
-
-        // server.begin(&wifiClient,"http://" + clientIP);
-
-        int httpCode = server.GET();
-
-        Serial.print("HTTP CODE: ");
-        Serial.println(httpCode);
-
-        Serial.print("URL: ");
-        Serial.println("http://" + clientIP + ":80");
-
-        if (httpCode > 0)
-        {
-            String payload = server.getString(); //Get the request response payload
-            Serial.println("Payload: ");
-            Serial.println(payload); //Print the response payload
-        }
-        server.end();
 
         station = STAILQ_NEXT(station, next);
     }
-    wifi_softap_free_station_info();
+    wifi_softap_free_station_info();*/
 }
 
-
-WebServer::WebServer(){
-    this->server = new ESP8266WebServer(config::WEB_SERVER_PORT);
+WebServer::WebServer()
+{
+    this->udp = new WiFiUDP();
 }
 
-WebServer::~WebServer(){
-    this->server->close();
-    delete this->server;
-}
-
-void WebServer::initRoutes()
-{   
-    ESP8266WebServer * server = this->server;
-    WebServer * webserver = this;
-    this->server->on("/", [webserver,server]() {
-        server->send(200, "text/plain", "Web server");
-        // if (server->client().localIP().toString() == "192.168.44.1")
-        //     webserver->softAPClient = server->client();
-
-        // Serial.println(webserver->softAPClient.available());
-       
-      /*  Serial.println(server->client().localIP().toString());
-        Serial.println(server->client().localPort());
-
-        Serial.println(server->client().remoteIP().toString());
-        Serial.println(server->client().remotePort());*/
-
-        //getSoftAPClients();
-    });
+WebServer::~WebServer()
+{
+    delete this->udp;
 }
 
 void WebServer::start(){
-    this->initRoutes();
-    this->server->begin();
+    this->udp->begin(LOCAL_UDP_PORT);
 }
 
 void WebServer::handleClient(){
-    this->server->handleClient();
+    int packetSize = this->udp->parsePacket();
+    if (packetSize)
+    {
+        // receive incoming EthernetUdp packets
+        Serial.printf("Received %d bytes from %s, port %d\n", packetSize, this->udp->remoteIP().toString().c_str(), this->udp->remotePort());
+        int len = this->udp->read(incomingPacket, 255);
+        if (len > 0)
+        {
+            incomingPacket[len] = 0;
+        }
+
+        Serial.printf("Udp packet contents: %s\n", incomingPacket);
+
+        //Serial.printf("Converted: %s\n", MessageParser::parse(incomingPacket));
+
+        // send back a reply, to the IP address and port we got the packet from
+        // this->udp->beginPacket(this->udp->remoteIP(), this->udp->remotePort());
+        this->udp->beginPacket(WiFi.gatewayIP(), 1360);
+        this->udp->write("got it");
+        this->udp->endPacket();
+
+        this->udp->beginPacket(this->udp->remoteIP(), this->udp->remotePort());
+        this->udp->write("got it");
+        this->udp->endPacket();
+    }
 }
