@@ -1,10 +1,10 @@
 #include "config.h"
 #include <ESP8266WebServer.h>
 #include "MeshNetwork.h"
-#include "WebServer.h"
+#include "UDPServer.h"
 
 bool started = false;
-WebServer webserver;
+UDPServer udpServer;
 
 void setup()
 {
@@ -19,12 +19,12 @@ void setup()
   started = mesh.init();
 
   if(started){
-    webserver.start();
+    udpServer.start();
   }
 }
 
 void loop() {
   if(started){
-    webserver.handleClient();
+    udpServer.handleClient();
   }
 }
