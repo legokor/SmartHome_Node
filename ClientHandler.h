@@ -9,8 +9,8 @@
 class ClientHandler{
     private:
       char incomingPacket[256];
-      void sendToChildren(char *packet);
-      void sendToParent(char * packet);
+      void sendToChildren(Message *packet);
+      void sendToParent(Message * packet);
       char * listChildren();
       WiFiUDP * udp;
 

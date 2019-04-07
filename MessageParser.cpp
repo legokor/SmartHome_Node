@@ -1,19 +1,18 @@
 #include "MessageParser.h"
-#include <string.h>
+
 #include <stdio.h>
 
-Message *MessageParser::parseNMEA(char *tmpMessage)
+Message *MessageParser::parseNMEA(char *tmpMessage,int size)
 {
-    char *message = new char[strlen(tmpMessage) + 1];
-    message[strlen(message)] = '\0';
-    strcpy(message,tmpMessage);
+    char *message = new char[size];
+    memcpy(message,tmpMessage, size);
+    memmove(message, message + 1, size);
 
-    memmove(message, message + 1, strlen(message));
     unsigned char checkSum = 0;
-    checkSum |= (message[strlen(message)-2] - '0') << 4;
-    checkSum |= (message[strlen(message)-1] - '0');
-   
-    message[strlen(message) - 3] = 0;
+    checkSum |= (message[size-2] - '0') << 4;
+    checkSum |= (message[size - 1] - '0');
+
+    message[size - 3] = 0;
 
     char *p = strtok(message, ",");
     struct Message * newMessage = new Message;
@@ -25,24 +24,22 @@ Message *MessageParser::parseNMEA(char *tmpMessage)
     {
         if(fieldIndex == 0) strcpy(newMessage->command,p);
         else if(fieldIndex == 1) strcpy(newMessage->nodeid,p);
-        else if(fieldIndex == 2)
-        {
-            newMessage->payload = new char[strlen(p)];
-            strcpy(newMessage->payload, p);
-        }
-
         p = strtok(NULL, ",");
         fieldIndex++;
     }
+
+    int offset = strlen(newMessage->command) + strlen(newMessage->nodeid) + 1 + 1 + 1; // $,,
+    newMessage->payloadSize = (size-1) - offset - 3; 
+    newMessage->payload = new char[newMessage->payloadSize];
+    memcpy(newMessage->payload, tmpMessage + offset, newMessage->payloadSize);
 
     return newMessage;
 }
 
 char * MessageParser::createNMEA(Message * msg){
 
-    int size = strlen(msg->nodeid) + strlen(msg->command) + strlen(msg->payload);
-    size += 3 + 2 + 2; //$*\0 plus ,, plus checksum
-
+    int size = msg->getSize();
+  
     char *msgStr = new char[size];
     msgStr[0] = '$';
     msgStr[1] = '\0';
@@ -51,16 +48,21 @@ char * MessageParser::createNMEA(Message * msg){
     strcat(msgStr, ",");
     strcat(msgStr, msg->nodeid);
     strcat(msgStr, ",");
-    strcat(msgStr, msg->payload);
+    
+    int offset = strlen(msgStr);
+    for (int k = 0; k < msg->payloadSize; k++)
+    {
+        msgStr[offset + k] = msg->payload[k];
+    }
 
-    msgStr[size - 4] = '*';
+    msgStr[size - 3] = '*';
+
     int chkSum = MessageParser::calculateCheckSum(msgStr);
     char chkStr[3];
     sprintf(chkStr,"%02x",chkSum);
-    msgStr[size - 3] = chkStr[0];
-    msgStr[size - 2] = chkStr[1];
-
-    msgStr[size - 1] = '\0';
+    
+    msgStr[size - 2] = chkStr[0];
+    msgStr[size - 1] = chkStr[1];
 
     return msgStr;
 }
