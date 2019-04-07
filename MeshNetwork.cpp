@@ -126,7 +126,5 @@ bool MeshNetwork::init(){
     Serial.print("Password: ");
     Serial.println(this->generatePassword(WiFi.softAPmacAddress().c_str()));
 
-    digitalWrite(board::STATUS_LED, HIGH);
-
-    // Serial.println(wifi_get_broadcast_if());
+    return true;
 }

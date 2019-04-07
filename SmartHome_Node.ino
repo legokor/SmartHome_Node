@@ -1,30 +1,31 @@
 #include "config.h"
 #include <ESP8266WebServer.h>
 #include "MeshNetwork.h"
-#include "UDPServer.h"
+#include "ClientHandler.h"
+#include "IOHandler.h"
 
 bool started = false;
-UDPServer udpServer;
+ClientHandler clientHandler;
+IOHandler * ioHandler;
 
 void setup()
 {
+  ioHandler = new IOHandler();
   WiFi.persistent(false);
 
-  pinMode(board::STATUS_LED, OUTPUT);
-
   Serial.begin(115200);
-  Serial.println();
   
   MeshNetwork mesh;
   started = mesh.init();
 
   if(started){
-    udpServer.start();
+    ioHandler->setStatusLED(1);
+    clientHandler.start();
   }
 }
 
 void loop() {
   if(started){
-    udpServer.handleClient();
+    clientHandler.handle(ioHandler);
   }
 }

@@ -3,17 +3,21 @@
 
 #include <stdio.h>
 
-struct Message
+class Message
 {
-    char command[20];
-    char nodeid[17];
-    int input[4];
-    int output[4];
+    public:
+        char command[10];
+        char nodeid[17];
+        int input[4];
+        int output[4];
+        char * extra;
+        ~Message(){ delete extra;}
 };
 
 class MessageParser{
     public:
-      static struct Message * parseNMEA(char *message);
+      static Message * parseNMEA(char *message);
+      static char * createNMEA(Message *);
       static bool isValid(char *message);
 };
 

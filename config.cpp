@@ -6,8 +6,3 @@ namespace config
     int AP_PARENT_CONNECTION_TRIES = 3;
     int WEB_SERVER_PORT = 80;
 } 
-
-namespace board
-{
-    int STATUS_LED = 2;
-}

@@ -7,9 +7,4 @@ namespace config
     extern int AP_PARENT_CONNECTION_TRIES;
     extern int WEB_SERVER_PORT;
 } 
-
-namespace board
-{
-    extern int STATUS_LED;
-}
 #endif
