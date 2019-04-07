@@ -97,7 +97,7 @@ void ClientHandler::handle(IOHandler *ioHandler)
     }
     else if(!strcmp(message->command,"LIST")){
 
-        message->extra = this->listChildren();
+        message->payload = this->listChildren();
         char* packet = MessageParser::createNMEA(message);
         this->sendToParent(packet);
         Serial.println("list");
