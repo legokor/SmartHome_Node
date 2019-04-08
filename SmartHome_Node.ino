@@ -1,8 +1,8 @@
-#include "config.h"
 #include <ESP8266WebServer.h>
-#include "MeshNetwork.h"
-#include "ClientHandler.h"
-#include "IOHandler.h"
+#include "src/config.h"
+#include "src/MeshNetwork.h"
+#include "src/ClientHandler.h"
+#include "src/IOHandler.h"
 
 bool started = false;
 ClientHandler clientHandler;
