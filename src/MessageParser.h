@@ -13,6 +13,7 @@ class Message
         int checkSum;
         int payloadSize;
         int getSize() { return strlen(command) + strlen(nodeid) + payloadSize + 2 + 2 + 2; } //$* plus ,, plus checksum
+        void setPayload(char*,int);
         Message(){ payloadSize = 0; payload = nullptr;}
         ~Message(){ delete payload;}
 };

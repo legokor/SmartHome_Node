@@ -2,6 +2,12 @@
 
 #include <stdio.h>
 
+void Message::setPayload(char * content, int size){
+    delete this->payload;
+    this->payload = content;
+    this->payloadSize = size;
+}
+
 Message *MessageParser::parseNMEA(char *tmpMessage,int size)
 {
     char *message = new char[size];
@@ -32,6 +38,7 @@ Message *MessageParser::parseNMEA(char *tmpMessage,int size)
     newMessage->payloadSize = (size-1) - offset - 3; 
     newMessage->payload = new char[newMessage->payloadSize];
     memcpy(newMessage->payload, tmpMessage + offset, newMessage->payloadSize);
+    delete message;
 
     return newMessage;
 }

@@ -5,25 +5,12 @@
 
 #define LOCAL_UDP_PORT 1360
 
-void ClientHandler::sendToChildren(Message * message)
-{
-    char *incomingPacket = MessageParser::createNMEA(message);
-    struct station_info *station = wifi_softap_get_station_info();
-    while (station)
-    {
-        this->udp->beginPacket(IPAddress(&station->ip), LOCAL_UDP_PORT);
-        this->udp->write(incomingPacket,message->getSize());
-        this->udp->endPacket();
 
-        station = STAILQ_NEXT(station, next);
-    }
-    wifi_softap_free_station_info();
-    delete incomingPacket;
-}
 
 ClientHandler::ClientHandler()
 {
     this->udp = new WiFiUDP();
+    this->incomingPacket = nullptr;
 }
 
 ClientHandler::~ClientHandler()
@@ -36,30 +23,6 @@ void ClientHandler::start()
     this->udp->begin(LOCAL_UDP_PORT);
 }
 
-Message *ClientHandler::handleMessage()
-{
-    int packetSize = this->udp->parsePacket();
-    if (!packetSize) return nullptr;
-    
-    int len = this->udp->read(incomingPacket, 255);
-    if (len > 0)  incomingPacket[len] = 0;
-
-    Serial.printf("INC: %s\n",incomingPacket);
- 
-    Message * newMessage = MessageParser::parseNMEA(incomingPacket,len);
- 
-    //Message Routing
-    if (strcmp(newMessage->nodeid, WiFi.softAPmacAddress().c_str()) == 0)
-        return newMessage;
-    else if (WiFi.gatewayIP() == this->udp->remoteIP())
-        this->sendToChildren(newMessage);
-    else
-        this->sendToParent(newMessage);
-
-    delete newMessage;
-    return nullptr;
-}
-
 void ClientHandler::sendToParent(Message * message)
 {
     char* incomingPacket = MessageParser::createNMEA(message);
@@ -69,24 +32,66 @@ void ClientHandler::sendToParent(Message * message)
     delete incomingPacket;
 }
 
-char*  ClientHandler::listChildren(){
-    int size = WiFi.softAPgetStationNum()*6;
-    
-    char * outputString = new char[size];
-
-    int index = 0;
+void ClientHandler::sendToChildren(Message *message)
+{
+    char *incomingPacket = MessageParser::createNMEA(message);
     struct station_info *station = wifi_softap_get_station_info();
     while (station)
     {
-        for(int k = 0; k<6;k++){
-            outputString[index] = station->bssid[k];
-            index++;
-        }
+        this->udp->beginPacket(IPAddress(&station->ip), LOCAL_UDP_PORT);
+        this->udp->write(incomingPacket, message->getSize());
+        this->udp->endPacket();
+
+        station = STAILQ_NEXT(station, next);
+    }
+    wifi_softap_free_station_info();
+    delete incomingPacket;
+}
+
+char*  ClientHandler::listChildren(){
+    int size = WiFi.softAPgetStationNum()*6; //6*MAC
+    
+    char * outputString = new char[size];
+
+    int offset = 0;
+    struct station_info *station = wifi_softap_get_station_info();
+    while (station)
+    {
+        memcpy(outputString+offset,station->bssid,6);
+        offset += 6;
         station = STAILQ_NEXT(station, next);
     }
     wifi_softap_free_station_info();
 
     return outputString;
+}
+
+Message *ClientHandler::handleMessage()
+{
+    int packetSize = this->udp->parsePacket();
+    if (!packetSize)
+        return nullptr;
+    
+    this->incomingPacket = new char[packetSize+1];
+
+    int len = this->udp->read(this->incomingPacket, packetSize);
+    if (len > 0) incomingPacket[packetSize] = 0;
+
+    Serial.printf("INC: %s\n", this->incomingPacket);
+
+    Message *newMessage = MessageParser::parseNMEA(this->incomingPacket, packetSize);
+    delete this->incomingPacket;
+
+    //Message Routing
+    if (strcmp(newMessage->nodeid, WiFi.softAPmacAddress().c_str()) == 0) //If its ours
+        return newMessage;
+    else if (WiFi.gatewayIP() == this->udp->remoteIP()) //If come from parent
+        this->sendToChildren(newMessage);
+    else    //Anything else forwarded to parent
+        this->sendToParent(newMessage);
+
+    delete newMessage;
+    return nullptr;
 }
 
 void ClientHandler::handle(IOHandler *ioHandler)
@@ -96,13 +101,10 @@ void ClientHandler::handle(IOHandler *ioHandler)
 
     if(!strcmp(message->command,"READ")){
         Serial.println("read");
-        delete message->payload;
-        message->payload = ioHandler->getInputAll();
-        message->payloadSize = ioHandler->getNumberOfInput();
+        message->setPayload(ioHandler->getInputAll(), ioHandler->getNumberOfInput());
         this->sendToParent( message );
     }
     else if(!strcmp(message->command,"WRTE")){
-       
         int channel = message->payload[0] - '0';
         int state = message->payload[1] - '0';
         Serial.printf("write channel: %d state: %d\n",channel,state);
@@ -110,10 +112,8 @@ void ClientHandler::handle(IOHandler *ioHandler)
     }
     else if(!strcmp(message->command,"LIST")){
         Serial.println("list");
-        delete message->payload;
-        message->payload = this->listChildren();
-        message->payloadSize = WiFi.softAPgetStationNum()*6;
-        this->sendToParent( message );
+        message->setPayload(this->listChildren(), WiFi.softAPgetStationNum()*6);
+        this->sendToParent(message);
     }
 
     delete message;

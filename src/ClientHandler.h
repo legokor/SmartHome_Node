@@ -8,7 +8,7 @@
 
 class ClientHandler{
     private:
-      char incomingPacket[256];
+      char * incomingPacket;
       void sendToChildren(Message *packet);
       void sendToParent(Message * packet);
       char * listChildren();
