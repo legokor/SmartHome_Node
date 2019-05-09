@@ -18,7 +18,7 @@ class ClientHandler{
       ClientHandler();
       ~ClientHandler();
       void start();
-      struct Message *handleMessage();
+      struct Message *recieveMessage();
       void handle(IOHandler *);
 };
 

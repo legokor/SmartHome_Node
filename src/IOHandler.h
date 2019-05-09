@@ -15,17 +15,20 @@
 #define INPUT_3 7
 #define INPUT_4 11
 
+#define NUMBER_OF_INPUT 4
+#define NUMBER_OF_OUTPUT 4
+
 class IOHandler
 {
   private:
-    int outputPins[4];
-    int inputPins[4];
+    int outputPins[NUMBER_OF_INPUT];
+    int inputPins[NUMBER_OF_OUTPUT];
 
   public:
     IOHandler();
     void initPins();
     void setStatusLED(int state){ digitalWrite(STATUS_LED,state); }
-    int getNumberOfInput(){ return sizeof(this->inputPins)/ sizeof(int); }
+    int getNumberOfInput() { return NUMBER_OF_INPUT; }
     char* getInputAll();
     void setOutput(int channel,int state);
 };

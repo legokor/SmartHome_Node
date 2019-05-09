@@ -66,7 +66,36 @@ char*  ClientHandler::listChildren(){
     return outputString;
 }
 
-Message *ClientHandler::handleMessage()
+void ClientHandler::handle(IOHandler *ioHandler)
+{
+    Message *message = this->recieveMessage();
+    if (!message) //Message is forwarded
+        return;
+
+    if (!strcmp(message->command, "READ"))
+    {
+        Serial.println("read");
+        message->setPayload(ioHandler->getInputAll(), ioHandler->getNumberOfInput());
+        this->sendToParent(message);
+    }
+    else if (!strcmp(message->command, "WRTE"))
+    {
+        int channel = message->payload[0] - '0';
+        int state = message->payload[1] - '0';
+        Serial.printf("write channel: %d state: %d\n", channel, state);
+        ioHandler->setOutput(channel, state);
+    }
+    else if (!strcmp(message->command, "LIST"))
+    {
+        Serial.println("list");
+        message->setPayload(this->listChildren(), WiFi.softAPgetStationNum() * 6);
+        this->sendToParent(message);
+    }
+
+    delete message;
+}
+
+Message *ClientHandler::recieveMessage()
 {
     int packetSize = this->udp->parsePacket();
     if (!packetSize)
@@ -92,29 +121,4 @@ Message *ClientHandler::handleMessage()
 
     delete newMessage;
     return nullptr;
-}
-
-void ClientHandler::handle(IOHandler *ioHandler)
-{
-    Message * message = this->handleMessage();
-    if(!message) return;
-
-    if(!strcmp(message->command,"READ")){
-        Serial.println("read");
-        message->setPayload(ioHandler->getInputAll(), ioHandler->getNumberOfInput());
-        this->sendToParent( message );
-    }
-    else if(!strcmp(message->command,"WRTE")){
-        int channel = message->payload[0] - '0';
-        int state = message->payload[1] - '0';
-        Serial.printf("write channel: %d state: %d\n",channel,state);
-        ioHandler->setOutput(channel,state);
-    }
-    else if(!strcmp(message->command,"LIST")){
-        Serial.println("list");
-        message->setPayload(this->listChildren(), WiFi.softAPgetStationNum()*6);
-        this->sendToParent(message);
-    }
-
-    delete message;
 }

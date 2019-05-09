@@ -17,11 +17,11 @@ void IOHandler::initPins(){
     Serial.println("Pins initialized");
     pinMode(STATUS_LED, OUTPUT);
 
-    for (int k = 0; k < sizeof(this->inputPins) / sizeof(int); k++)
+    for (int k = 0; k < NUMBER_OF_INPUT; k++)
     {
         pinMode(this->inputPins[k], INPUT);
     }
-    for (int k = 0; k < sizeof(this->outputPins) / sizeof(int); k++)
+    for (int k = 0; k < NUMBER_OF_OUTPUT; k++)
     {
         pinMode(this->outputPins[k], OUTPUT);
         setOutput(k,0);
@@ -29,9 +29,10 @@ void IOHandler::initPins(){
 }
 
 char * IOHandler::getInputAll(){
-    char * values = new char[sizeof(this->inputPins)/ sizeof(int)];
-    
-    for(int k = 0; k < sizeof(this->inputPins) / sizeof(int); k++){
+    char *values = new char[NUMBER_OF_INPUT];
+
+    for (int k = 0; k < NUMBER_OF_INPUT; k++)
+    {
         if(k == 0){
             values[k] = analogRead(this->inputPins[k]) / 1024 * 255;
         }

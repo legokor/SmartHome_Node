@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 void Message::setPayload(char * content, int size){
-    delete this->payload;
+    if(this->payload != nullptr) delete this->payload;
     this->payload = content;
     this->payloadSize = size;
 }
