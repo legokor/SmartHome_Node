@@ -51,13 +51,16 @@ bool MeshNetwork::searchParent(){
 
     bool hasPossibleParent = false;
     //search for possible parents
-    for (int i = 0; i < numberOfNetworks; i++)
-    {
-        if (this->checkPrefix(WiFi.SSID(i).c_str(), config::AP_PREFIX)){
-            this->possibleParents[i] = WiFi.RSSI(i);
-            hasPossibleParent = true;
+    if(numberOfNetworks > 0){
+        for (int i = 0; i < numberOfNetworks; i++)
+        {
+            if (this->checkPrefix(WiFi.SSID(i).c_str(), config::AP_PREFIX)){
+                this->possibleParents[i] = WiFi.RSSI(i);
+                hasPossibleParent = true;
+            }
+            else this->possibleParents[i] = -100;
+        
         }
-        else this->possibleParents[i] = -100;
     }
 
     return hasPossibleParent;
@@ -98,6 +101,7 @@ bool MeshNetwork::createAP(){
 }
 
 bool MeshNetwork::init(){
+    
     if(!this->searchParent()){
         Serial.print("Can't find parents");
         return false;

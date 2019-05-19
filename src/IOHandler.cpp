@@ -34,11 +34,10 @@ char * IOHandler::getInputAll(){
     for (int k = 0; k < NUMBER_OF_INPUT; k++)
     {
         if(k == 0){
-            values[k] = analogRead(this->inputPins[k]) / 1024 * 255;
+            values[k] = map(analogRead(this->inputPins[k]),0,1024,0,255);// / 1024 * 255;
         }
         else values[k] = digitalRead(this->inputPins[k]);
     }
-
     return values;
 }
 

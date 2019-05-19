@@ -71,7 +71,7 @@ void ClientHandler::handle(IOHandler *ioHandler)
     Message *message = this->recieveMessage();
     if (!message) //Message is forwarded
         return;
-
+    Serial.println(message->command);
     if (!strcmp(message->command, "READ"))
     {
         Serial.println("read");
@@ -80,15 +80,23 @@ void ClientHandler::handle(IOHandler *ioHandler)
     }
     else if (!strcmp(message->command, "WRTE"))
     {
-        int channel = message->payload[0] - '0';
-        int state = message->payload[1] - '0';
-        Serial.printf("write channel: %d state: %d\n", channel, state);
+        int channel = message->payload[0];// - '0';
+        int state = message->payload[1];// - '0';
         ioHandler->setOutput(channel, state);
+        this->sendToParent(message);
     }
     else if (!strcmp(message->command, "LIST"))
     {
         Serial.println("list");
         message->setPayload(this->listChildren(), WiFi.softAPgetStationNum() * 6);
+        this->sendToParent(message);
+    }
+    else if (!strcmp(message->command, "PING"))
+    {
+        Serial.println("ping");
+        this->sendToChildren(message);
+        memcpy(message->nodeid, WiFi.softAPmacAddress().c_str(), 17); 
+        message->setPayload(ioHandler->getInputAll(), ioHandler->getNumberOfInput());  
         this->sendToParent(message);
     }
 
@@ -110,9 +118,9 @@ Message *ClientHandler::recieveMessage()
 
     Message *newMessage = MessageParser::parseNMEA(this->incomingPacket, packetSize);
     delete this->incomingPacket;
-
     //Message Routing
-    if (strcmp(newMessage->nodeid, WiFi.softAPmacAddress().c_str()) == 0) //If its ours
+    if (strcmp(newMessage->nodeid, WiFi.softAPmacAddress().c_str()) == 0 || 
+        strcmp(newMessage->nodeid,"FF:FF:FF:FF:FF:FF") == 0) //If its ours
         return newMessage;
     else if (WiFi.gatewayIP() == this->udp->remoteIP()) //If come from parent
         this->sendToChildren(newMessage);

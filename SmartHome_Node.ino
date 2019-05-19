@@ -7,14 +7,15 @@
 bool started = false;
 ClientHandler clientHandler;
 IOHandler ioHandler;
-
+MeshNetwork mesh;
+  
 void setup()
 {
   Serial.begin(115200);
   WiFi.persistent(false);
   ioHandler.initPins();
 
-  MeshNetwork mesh;
+
   started = mesh.init();
 
   if(started){
@@ -24,7 +25,9 @@ void setup()
 }
 
 void loop() {
+ 
   if(started){
     clientHandler.handle(&ioHandler);
   }
+  
 }

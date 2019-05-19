@@ -35,7 +35,7 @@ Message *MessageParser::parseNMEA(char *tmpMessage,int size)
     }
 
     int offset = strlen(newMessage->command) + strlen(newMessage->nodeid) + 1 + 1 + 1; // $,,
-    newMessage->payloadSize = (size-1) - offset - 3; 
+    newMessage->payloadSize = (size) - offset - 3; 
     newMessage->payload = new char[newMessage->payloadSize];
     memcpy(newMessage->payload, tmpMessage + offset, newMessage->payloadSize);
     delete message;
